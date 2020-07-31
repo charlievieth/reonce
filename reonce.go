@@ -7,27 +7,54 @@ import (
 )
 
 type Regexp struct {
-	once sync.Once
-	re   *regexp.Regexp
-	expr string
+	once  sync.Once
+	re    *regexp.Regexp
+	expr  string
+	posix bool
 }
 
+// New returns a new lazily initialized Regexp. The underlying *regexp.Regexp
+// will be compiled on first use. If pattern expr is invalid it will panic.
 func New(expr string) *Regexp {
 	return &Regexp{expr: expr}
 }
 
+// New returns a new lazily initialized POSIX Regexp.
+func NewPOSIX(expr string) *Regexp {
+	return &Regexp{expr: expr, posix: true}
+}
+
+// Compile manually compiles the Regexp and returns the error, this is a no-op
+// if the Regexp was already lazily compiled by a call to any of it's methods.
 func (re *Regexp) Compile() (err error) {
 	re.once.Do(func() {
-		re.re, err = regexp.Compile(re.expr)
+		if re.posix {
+			re.re, err = regexp.CompilePOSIX(re.expr)
+		} else {
+			re.re, err = regexp.Compile(re.expr)
+		}
 	})
 	return err
 }
 
 func (re *Regexp) mustCompile() {
-	re.re = regexp.MustCompile(re.expr)
+	if re.posix {
+		re.re = regexp.MustCompilePOSIX(re.expr)
+	} else {
+		re.re = regexp.MustCompile(re.expr)
+	}
 }
 
+// MustCompile compiles the Regexp and panics if there is an error, this is a
+// no-op if the Regexp was already lazily compiled by a call to any of  it's
+// methods.
 func (re *Regexp) MustCompile() { re.once.Do(re.mustCompile) }
+
+// Regexp returns the underlying *regexp.Regexp.
+func (re *Regexp) Regexp() *regexp.Regexp {
+	re.once.Do(re.mustCompile)
+	return re.re
+}
 
 func (re *Regexp) Copy() *regexp.Regexp {
 	re.once.Do(re.mustCompile)
