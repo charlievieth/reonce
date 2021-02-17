@@ -108,14 +108,17 @@ func TestLazyCompile(t *testing.T) {
 		m := reflect.ValueOf(re).MethodByName(methodName)
 
 		m.Call(buildMethodArgs(t, m))
-		if re.re == nil {
+		if re.rx == nil {
 			t.Error("Failed to initialize re.re: nil")
 		}
 		if !onceCalled(re) {
 			t.Error("Failed to initialize re.re: once never called")
 		}
+		if re.expr != "" {
+			t.Error("Failed to clear re.expr")
+		}
 		if re.String() != GoodPattern {
-			t.Errorf("Want expr: %q got: %q", GoodPattern, re.re.String())
+			t.Errorf("Want expr: %q got: %q", GoodPattern, re.rx.String())
 		}
 	}
 

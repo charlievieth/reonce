@@ -9,7 +9,7 @@ import (
 )
 
 type Regexp struct {
-	re    *regexp.Regexp
+	rx    *regexp.Regexp
 	once  sync.Once
 	posix bool // pack this after once to save space
 	expr  string
@@ -39,20 +39,27 @@ func NewPOSIX(expr string) *Regexp {
 func (re *Regexp) Compile() (err error) {
 	re.once.Do(func() {
 		if re.posix {
-			re.re, err = regexp.CompilePOSIX(re.expr)
+			re.rx, err = regexp.CompilePOSIX(re.expr)
 		} else {
-			re.re, err = regexp.Compile(re.expr)
+			re.rx, err = regexp.Compile(re.expr)
 		}
+		re.expr = ""
 	})
 	return err
 }
 
 func (re *Regexp) mustCompile() {
 	if re.posix {
-		re.re = regexp.MustCompilePOSIX(re.expr)
+		re.rx = regexp.MustCompilePOSIX(re.expr)
 	} else {
-		re.re = regexp.MustCompile(re.expr)
+		re.rx = regexp.MustCompile(re.expr)
 	}
+	re.expr = ""
+}
+
+func (re *Regexp) re() *regexp.Regexp {
+	re.once.Do(re.mustCompile)
+	return re.rx
 }
 
 // MustCompile compiles the Regexp and panics if there is an error, this is a
@@ -62,8 +69,7 @@ func (re *Regexp) MustCompile() { re.once.Do(re.mustCompile) }
 
 // Regexp returns the underlying *regexp.Regexp.
 func (re *Regexp) Regexp() *regexp.Regexp {
-	re.once.Do(re.mustCompile)
-	return re.re
+	return re.re()
 }
 
 // Copy returns a new Regexp object copied from re.
@@ -75,8 +81,7 @@ func (re *Regexp) Regexp() *regexp.Regexp {
 // Copy may still be appropriate if the reason for its use is to make
 // two copies with different Longest settings.
 func (re *Regexp) Copy() *regexp.Regexp {
-	re.once.Do(re.mustCompile)
-	return re.re.Copy()
+	return re.re().Copy()
 }
 
 // Expand appends template to dst and returns the result; during the
@@ -97,23 +102,20 @@ func (re *Regexp) Copy() *regexp.Regexp {
 //
 // To insert a literal $ in the output, use $$ in the template.
 func (re *Regexp) Expand(dst []byte, template []byte, src []byte, match []int) []byte {
-	re.once.Do(re.mustCompile)
-	return re.re.Expand(dst, template, src, match)
+	return re.re().Expand(dst, template, src, match)
 }
 
 // ExpandString is like Expand but the template and source are strings.
 // It appends to and returns a byte slice in order to give the calling
 // code control over allocation.
 func (re *Regexp) ExpandString(dst []byte, template string, src string, match []int) []byte {
-	re.once.Do(re.mustCompile)
-	return re.re.ExpandString(dst, template, src, match)
+	return re.re().ExpandString(dst, template, src, match)
 }
 
 // Find returns a slice holding the text of the leftmost match in b of the regular expression.
 // A return value of nil indicates no match.
 func (re *Regexp) Find(b []byte) []byte {
-	re.once.Do(re.mustCompile)
-	return re.re.Find(b)
+	return re.re().Find(b)
 }
 
 // FindAll is the 'All' version of Find; it returns a slice of all successive
@@ -121,8 +123,7 @@ func (re *Regexp) Find(b []byte) []byte {
 // package comment.
 // A return value of nil indicates no match.
 func (re *Regexp) FindAll(b []byte, n int) [][]byte {
-	re.once.Do(re.mustCompile)
-	return re.re.FindAll(b, n)
+	return re.re().FindAll(b, n)
 }
 
 // FindAllIndex is the 'All' version of FindIndex; it returns a slice of all
@@ -130,8 +131,7 @@ func (re *Regexp) FindAll(b []byte, n int) [][]byte {
 // in the package comment.
 // A return value of nil indicates no match.
 func (re *Regexp) FindAllIndex(b []byte, n int) [][]int {
-	re.once.Do(re.mustCompile)
-	return re.re.FindAllIndex(b, n)
+	return re.re().FindAllIndex(b, n)
 }
 
 // FindAllString is the 'All' version of FindString; it returns a slice of all
@@ -139,8 +139,7 @@ func (re *Regexp) FindAllIndex(b []byte, n int) [][]int {
 // in the package comment.
 // A return value of nil indicates no match.
 func (re *Regexp) FindAllString(s string, n int) []string {
-	re.once.Do(re.mustCompile)
-	return re.re.FindAllString(s, n)
+	return re.re().FindAllString(s, n)
 }
 
 // FindAllStringIndex is the 'All' version of FindStringIndex; it returns a
@@ -148,8 +147,7 @@ func (re *Regexp) FindAllString(s string, n int) []string {
 // description in the package comment.
 // A return value of nil indicates no match.
 func (re *Regexp) FindAllStringIndex(s string, n int) [][]int {
-	re.once.Do(re.mustCompile)
-	return re.re.FindAllStringIndex(s, n)
+	return re.re().FindAllStringIndex(s, n)
 }
 
 // FindAllStringSubmatch is the 'All' version of FindStringSubmatch; it
@@ -157,8 +155,7 @@ func (re *Regexp) FindAllStringIndex(s string, n int) [][]int {
 // the 'All' description in the package comment.
 // A return value of nil indicates no match.
 func (re *Regexp) FindAllStringSubmatch(s string, n int) [][]string {
-	re.once.Do(re.mustCompile)
-	return re.re.FindAllStringSubmatch(s, n)
+	return re.re().FindAllStringSubmatch(s, n)
 }
 
 // FindAllStringSubmatchIndex is the 'All' version of
@@ -167,8 +164,7 @@ func (re *Regexp) FindAllStringSubmatch(s string, n int) [][]string {
 // comment.
 // A return value of nil indicates no match.
 func (re *Regexp) FindAllStringSubmatchIndex(s string, n int) [][]int {
-	re.once.Do(re.mustCompile)
-	return re.re.FindAllStringSubmatchIndex(s, n)
+	return re.re().FindAllStringSubmatchIndex(s, n)
 }
 
 // FindAllSubmatch is the 'All' version of FindSubmatch; it returns a slice
@@ -176,8 +172,7 @@ func (re *Regexp) FindAllStringSubmatchIndex(s string, n int) [][]int {
 // description in the package comment.
 // A return value of nil indicates no match.
 func (re *Regexp) FindAllSubmatch(b []byte, n int) [][][]byte {
-	re.once.Do(re.mustCompile)
-	return re.re.FindAllSubmatch(b, n)
+	return re.re().FindAllSubmatch(b, n)
 }
 
 // FindAllSubmatchIndex is the 'All' version of FindSubmatchIndex; it returns
@@ -185,8 +180,7 @@ func (re *Regexp) FindAllSubmatch(b []byte, n int) [][][]byte {
 // 'All' description in the package comment.
 // A return value of nil indicates no match.
 func (re *Regexp) FindAllSubmatchIndex(b []byte, n int) [][]int {
-	re.once.Do(re.mustCompile)
-	return re.re.FindAllSubmatchIndex(b, n)
+	return re.re().FindAllSubmatchIndex(b, n)
 }
 
 // FindIndex returns a two-element slice of integers defining the location of
@@ -194,8 +188,7 @@ func (re *Regexp) FindAllSubmatchIndex(b []byte, n int) [][]int {
 // b[loc[0]:loc[1]].
 // A return value of nil indicates no match.
 func (re *Regexp) FindIndex(b []byte) (loc []int) {
-	re.once.Do(re.mustCompile)
-	return re.re.FindIndex(b)
+	return re.re().FindIndex(b)
 }
 
 // FindReaderIndex returns a two-element slice of integers defining the
@@ -204,8 +197,7 @@ func (re *Regexp) FindIndex(b []byte) (loc []int) {
 // byte offset loc[0] through loc[1]-1.
 // A return value of nil indicates no match.
 func (re *Regexp) FindReaderIndex(r io.RuneReader) (loc []int) {
-	re.once.Do(re.mustCompile)
-	return re.re.FindReaderIndex(r)
+	return re.re().FindReaderIndex(r)
 }
 
 // FindReaderSubmatchIndex returns a slice holding the index pairs
@@ -214,8 +206,7 @@ func (re *Regexp) FindReaderIndex(r io.RuneReader) (loc []int) {
 // by the 'Submatch' and 'Index' descriptions in the package comment. A
 // return value of nil indicates no match.
 func (re *Regexp) FindReaderSubmatchIndex(r io.RuneReader) []int {
-	re.once.Do(re.mustCompile)
-	return re.re.FindReaderSubmatchIndex(r)
+	return re.re().FindReaderSubmatchIndex(r)
 }
 
 // FindString returns a string holding the text of the leftmost match in s of the regular
@@ -224,8 +215,7 @@ func (re *Regexp) FindReaderSubmatchIndex(r io.RuneReader) []int {
 // an empty string. Use FindStringIndex or FindStringSubmatch if it is
 // necessary to distinguish these cases.
 func (re *Regexp) FindString(s string) string {
-	re.once.Do(re.mustCompile)
-	return re.re.FindString(s)
+	return re.re().FindString(s)
 }
 
 // FindStringIndex returns a two-element slice of integers defining the
@@ -233,8 +223,7 @@ func (re *Regexp) FindString(s string) string {
 // itself is at s[loc[0]:loc[1]].
 // A return value of nil indicates no match.
 func (re *Regexp) FindStringIndex(s string) (loc []int) {
-	re.once.Do(re.mustCompile)
-	return re.re.FindStringIndex(s)
+	return re.re().FindStringIndex(s)
 }
 
 // FindStringSubmatch returns a slice of strings holding the text of the
@@ -243,8 +232,7 @@ func (re *Regexp) FindStringIndex(s string) (loc []int) {
 // package comment.
 // A return value of nil indicates no match.
 func (re *Regexp) FindStringSubmatch(s string) []string {
-	re.once.Do(re.mustCompile)
-	return re.re.FindStringSubmatch(s)
+	return re.re().FindStringSubmatch(s)
 }
 
 // FindStringSubmatchIndex returns a slice holding the index pairs
@@ -253,8 +241,7 @@ func (re *Regexp) FindStringSubmatch(s string) []string {
 // 'Index' descriptions in the package comment.
 // A return value of nil indicates no match.
 func (re *Regexp) FindStringSubmatchIndex(s string) []int {
-	re.once.Do(re.mustCompile)
-	return re.re.FindStringSubmatchIndex(s)
+	return re.re().FindStringSubmatchIndex(s)
 }
 
 // FindSubmatch returns a slice of slices holding the text of the leftmost
@@ -263,8 +250,7 @@ func (re *Regexp) FindStringSubmatchIndex(s string) []int {
 // comment.
 // A return value of nil indicates no match.
 func (re *Regexp) FindSubmatch(b []byte) [][]byte {
-	re.once.Do(re.mustCompile)
-	return re.re.FindSubmatch(b)
+	return re.re().FindSubmatch(b)
 }
 
 // FindSubmatchIndex returns a slice holding the index pairs identifying the
@@ -273,16 +259,14 @@ func (re *Regexp) FindSubmatch(b []byte) [][]byte {
 // in the package comment.
 // A return value of nil indicates no match.
 func (re *Regexp) FindSubmatchIndex(b []byte) []int {
-	re.once.Do(re.mustCompile)
-	return re.re.FindSubmatchIndex(b)
+	return re.re().FindSubmatchIndex(b)
 }
 
 // LiteralPrefix returns a literal string that must begin any match
 // of the regular expression re. It returns the boolean true if the
 // literal string comprises the entire regular expression.
 func (re *Regexp) LiteralPrefix() (prefix string, complete bool) {
-	re.once.Do(re.mustCompile)
-	return re.re.LiteralPrefix()
+	return re.re().LiteralPrefix()
 }
 
 // Longest makes future searches prefer the leftmost-longest match.
@@ -292,43 +276,37 @@ func (re *Regexp) LiteralPrefix() (prefix string, complete bool) {
 // This method modifies the Regexp and may not be called concurrently
 // with any other methods.
 func (re *Regexp) Longest() {
-	re.once.Do(re.mustCompile)
-	re.re.Longest()
+	re.re().Longest()
 }
 
 // Match reports whether the byte slice b
 // contains any match of the regular expression re.
 func (re *Regexp) Match(b []byte) bool {
-	re.once.Do(re.mustCompile)
-	return re.re.Match(b)
+	return re.re().Match(b)
 }
 
 // MatchReader reports whether the text returned by the RuneReader
 // contains any match of the regular expression re.
 func (re *Regexp) MatchReader(r io.RuneReader) bool {
-	re.once.Do(re.mustCompile)
-	return re.re.MatchReader(r)
+	return re.re().MatchReader(r)
 }
 
 // MatchString reports whether the string s
 // contains any match of the regular expression re.
 func (re *Regexp) MatchString(s string) bool {
-	re.once.Do(re.mustCompile)
-	return re.re.MatchString(s)
+	return re.re().MatchString(s)
 }
 
 // NumSubexp returns the number of parenthesized subexpressions in this Regexp.
 func (re *Regexp) NumSubexp() int {
-	re.once.Do(re.mustCompile)
-	return re.re.NumSubexp()
+	return re.re().NumSubexp()
 }
 
 // ReplaceAll returns a copy of src, replacing matches of the Regexp
 // with the replacement text repl. Inside repl, $ signs are interpreted as
 // in Expand, so for instance $1 represents the text of the first submatch.
 func (re *Regexp) ReplaceAll(src, repl []byte) []byte {
-	re.once.Do(re.mustCompile)
-	return re.re.ReplaceAll(src, repl)
+	return re.re().ReplaceAll(src, repl)
 }
 
 // ReplaceAllFunc returns a copy of src in which all matches of the
@@ -336,32 +314,28 @@ func (re *Regexp) ReplaceAll(src, repl []byte) []byte {
 // to the matched byte slice. The replacement returned by repl is substituted
 // directly, without using Expand.
 func (re *Regexp) ReplaceAllFunc(src []byte, repl func([]byte) []byte) []byte {
-	re.once.Do(re.mustCompile)
-	return re.re.ReplaceAllFunc(src, repl)
+	return re.re().ReplaceAllFunc(src, repl)
 }
 
 // ReplaceAllLiteral returns a copy of src, replacing matches of the Regexp
 // with the replacement bytes repl. The replacement repl is substituted directly,
 // without using Expand.
 func (re *Regexp) ReplaceAllLiteral(src, repl []byte) []byte {
-	re.once.Do(re.mustCompile)
-	return re.re.ReplaceAllLiteral(src, repl)
+	return re.re().ReplaceAllLiteral(src, repl)
 }
 
 // ReplaceAllLiteralString returns a copy of src, replacing matches of the Regexp
 // with the replacement string repl. The replacement repl is substituted directly,
 // without using Expand.
 func (re *Regexp) ReplaceAllLiteralString(src, repl string) string {
-	re.once.Do(re.mustCompile)
-	return re.re.ReplaceAllLiteralString(src, repl)
+	return re.re().ReplaceAllLiteralString(src, repl)
 }
 
 // ReplaceAllString returns a copy of src, replacing matches of the Regexp
 // with the replacement string repl. Inside repl, $ signs are interpreted as
 // in Expand, so for instance $1 represents the text of the first submatch.
 func (re *Regexp) ReplaceAllString(src, repl string) string {
-	re.once.Do(re.mustCompile)
-	return re.re.ReplaceAllString(src, repl)
+	return re.re().ReplaceAllString(src, repl)
 }
 
 // ReplaceAllStringFunc returns a copy of src in which all matches of the
@@ -369,8 +343,7 @@ func (re *Regexp) ReplaceAllString(src, repl string) string {
 // to the matched substring. The replacement returned by repl is substituted
 // directly, without using Expand.
 func (re *Regexp) ReplaceAllStringFunc(src string, repl func(string) string) string {
-	re.once.Do(re.mustCompile)
-	return re.re.ReplaceAllStringFunc(src, repl)
+	return re.re().ReplaceAllStringFunc(src, repl)
 }
 
 // Split slices s into substrings separated by the expression and returns a slice of
@@ -389,14 +362,12 @@ func (re *Regexp) ReplaceAllStringFunc(src string, repl func(string) string) str
 //   n == 0: the result is nil (zero substrings)
 //   n < 0: all substrings
 func (re *Regexp) Split(s string, n int) []string {
-	re.once.Do(re.mustCompile)
-	return re.re.Split(s, n)
+	return re.re().Split(s, n)
 }
 
 // String returns the source text used to compile the regular expression.
 func (re *Regexp) String() string {
-	re.once.Do(re.mustCompile)
-	return re.re.String()
+	return re.re().String()
 }
 
 // SubexpNames returns the names of the parenthesized subexpressions
@@ -405,8 +376,7 @@ func (re *Regexp) String() string {
 // Since the Regexp as a whole cannot be named, names[0] is always
 // the empty string. The slice should not be modified.
 func (re *Regexp) SubexpNames() []string {
-	re.once.Do(re.mustCompile)
-	return re.re.SubexpNames()
+	return re.re().SubexpNames()
 }
 
 // SubexpIndex returns the index of the first subexpression with the given name,
@@ -417,6 +387,5 @@ func (re *Regexp) SubexpNames() []string {
 // In this case, SubexpIndex returns the index of the leftmost such subexpression
 // in the regular expression.
 func (re *Regexp) SubexpIndex(name string) int {
-	re.once.Do(re.mustCompile)
-	return re.re.SubexpIndex(name)
+	return re.re().SubexpIndex(name)
 }
