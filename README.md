@@ -1,3 +1,5 @@
+![Go](https://github.com/charlievieth/reonce/workflows/Go/badge.svg?branch=master)
+
 # reonce
 Lazily initialized Go regexes
 
