@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+PROJECT=github.com/charlievieth/reonce
+
+if [ -t 1 ]; then
+    FAIL_MSG=$'\E[0;31mFAIL\E[0m' # red
+    PASS_MSG=$'\E[0;32mPASS\E[0m' # green
+else
+    PASS_MSG='PASS'
+    FAIL_MSG='FAIL'
+fi
+
+ANALYSIS_PASSES=(
+    'vet'
+    'findcall'
+    'ifaceassert'
+    'lostcancel'
+    'nilness'
+    'shadow'
+    'stringintconv'
+    'unmarshal'
+)
+
+if ! go install golang.org/x/tools/go/analysis/passes/...; then
+    exit 1
+fi
+
+EXIT_CODE=0
+TMP=$(mktemp -d)
+trap 'rm -r $TMP' ERR
+
+DIR="$(go list -f '{{.Dir}}' "$PROJECT")"
+REPLACE="$(echo "$DIR/" | sed -r 's/([\$\.\*\/\[\\^])/\\\1/g')"
+INDENT="  "
+
+# run linters in parallel
+for pass in "${ANALYSIS_PASSES[@]}"; do
+    if [[ $pass == 'vet' ]]; then
+        go vet > "$TMP/$pass" 2>&1 &
+    else
+        go vet -vettool="$(type -p "${pass}")" "$PROJECT/..." > "$TMP/$pass" 2>&1 &
+    fi
+done
+
+wait # linters
+
+for pass in "${ANALYSIS_PASSES[@]}"; do
+    result="$(cat "$TMP/$pass")"
+    if [[ -z $result ]]; then
+        printf '%s: %s\n' "${pass}" "${PASS_MSG}"
+    else
+        printf '%s: %s\n%s\n' "${pass}" "${FAIL_MSG}" "${result}"
+        EXIT_CODE=1
+    fi
+done
+
+_print_gofiles() {
+    find "$DIR" -type d \( -name 'vendor' -o -name '.git' \) -prune -o \
+        -type f -name '*.go' -print0
+}
+
+_print_gofiles |
+    xargs -0 -- gofmt -s -l |
+    sed -e "s/$REPLACE/$INDENT/g" > "$TMP/gofmt" 2>&1 &
+
+_print_gofiles |
+    xargs -0 -- goimports -local "$PROJECT" -l |
+    sed -e "s/$REPLACE/$INDENT/g" > "$TMP/goimports" 2>&1  &
+
+wait # formatters
+
+# replace newlines + indent with ' '
+_replace_newlines() {
+    local line
+    line="$(echo "$1" | tr -d ' ' | tr '\n' ' ')"
+    line=${line%" "} # remove trailing space
+    echo "$line"
+}
+
+GO_FMT="$(cat "$TMP/gofmt")"
+if [[ -z $GO_FMT ]]; then
+    printf '%s: %s\n' "gofmt" "${PASS_MSG}"
+else
+    printf '%s: %s\n%s\n' "gofmt" "${FAIL_MSG}" "${GO_FMT}"
+    # shellcheck disable=SC2016
+    printf '%s# please run: `gofmt -s -w -- %s`\n' \
+        "$INDENT" "$(_replace_newlines "$GO_FMT")"
+    EXIT_CODE=1
+fi
+
+GO_IMPORTS="$(cat "$TMP/goimports")"
+if [[ -z $GO_IMPORTS ]]; then
+    printf '%s: %s\n' "goimports" "${PASS_MSG}"
+else
+    printf '%s: %s\n%s\n' "goimports" "${FAIL_MSG}" "${GO_IMPORTS}"
+    # shellcheck disable=SC2016
+    printf '%s# please run: `goimports -local "%s" -w -- %s`' \
+        "$INDENT" "$PROJECT" "$(_replace_newlines "$GO_IMPORTS")"
+    EXIT_CODE=1
+fi
+
+exit $EXIT_CODE
