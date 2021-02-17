@@ -6,16 +6,22 @@ import (
 	"github.com/charlievieth/reonce"
 )
 
-// goExtRe is not initialized until one of its methods is called
-// this can make program startup faster
-var goExtRe = reonce.New(`\.go$`)
+// ExtRe matches the extension of a file with a non-empty name.
+// Typically, reonce regexes should be declared globally via a
+// var or an init() function.
+//
+// NB: this is just an example and filepath.Ext() should really
+// be used instead.
+var ExtRe = reonce.New(`(?m)(?:\w+)(\.\w+)$`)
 
-// Math file names against the regex `\.go$`
-func ExampleRegexp() {
-	for _, name := range []string{"main.go", "nope.py"} {
-		fmt.Println(name, goExtRe.MatchString(name))
-	}
+func ExampleRegexp_FindStringSubmatch() {
+	fmt.Printf("%q\n", ExtRe.FindStringSubmatch("main.go"))
+	fmt.Printf("%q\n", ExtRe.FindStringSubmatch("nope.py"))
+	fmt.Printf("%q\n", ExtRe.FindStringSubmatch("noext"))
+	fmt.Printf("%q\n", ExtRe.FindStringSubmatch(".extonly"))
 	// Output:
-	// main.go true
-	// nope.py false
+	// ["main.go" ".go"]
+	// ["nope.py" ".py"]
+	// []
+	// []
 }
