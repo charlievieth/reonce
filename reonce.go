@@ -1,3 +1,5 @@
+// Package reonce implements a lazily initialized wrapper around the standard
+// libraries regexp package.
 package reonce
 
 import (
