@@ -1,3 +1,5 @@
+// +build !reoncetest
+
 package reonce
 
 import (
@@ -92,16 +94,25 @@ func buildMethodArgs(t *testing.T, method reflect.Value) []reflect.Value {
 }
 
 func TestLazyCompile(t *testing.T) {
-	const GoodPattern = "a"
+	const GoodPattern = ".*"
 
-	testMethod := func(t *testing.T, methodName string) {
-		re := New(GoodPattern)
+	onceCalled := func(re *Regexp) bool {
+		called := true
+		re.once.Do(func() { called = false })
+		return called
+	}
+
+	testMethod := func(t *testing.T, newRe func(string) *Regexp, methodName string) {
+		re := newRe(GoodPattern)
 
 		m := reflect.ValueOf(re).MethodByName(methodName)
 
 		m.Call(buildMethodArgs(t, m))
 		if re.re == nil {
-			t.Error("Failed to initialize re.re")
+			t.Error("Failed to initialize re.re: nil")
+		}
+		if !onceCalled(re) {
+			t.Error("Failed to initialize re.re: once never called")
 		}
 		if re.String() != GoodPattern {
 			t.Errorf("Want expr: %q got: %q", GoodPattern, re.re.String())
@@ -111,11 +122,11 @@ func TestLazyCompile(t *testing.T) {
 	typ := reflect.TypeOf(&Regexp{})
 	for i := 0; i < typ.NumMethod(); i++ {
 		m := typ.Method(i)
-		if m.Name == "Compile" {
-			continue
-		}
 		t.Run(m.Name, func(t *testing.T) {
-			testMethod(t, m.Name)
+			testMethod(t, New, m.Name)
+		})
+		t.Run(m.Name+"_POSIX", func(t *testing.T) {
+			testMethod(t, NewPOSIX, m.Name)
 		})
 	}
 }
