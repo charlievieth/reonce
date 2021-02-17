@@ -3,6 +3,8 @@
 # reonce
 Lazily initialized Go regexes.
 
+The `reonce` package provides a lazily initialized wrapper around Go's [`regexp`](https://golang.org/pkg/regexp) package. This package allows for regexes to be declared globally without incurring the compilation cost on program startup/initialization as the regexes are not compiled until first use. The regexes and compilation are thread-safe ([test](https://github.com/charlievieth/reonce/blob/6f5299ea34e785e202421258a42c336bd6a9a02f/reonce_test.go#L177-L204)).
+
 ### Usage
 
 The [`New()`](https://pkg.go.dev/github.com/charlievieth/reonce#New) and [`NewPOSIX()`](https://pkg.go.dev/github.com/charlievieth/reonce#NewPOSIX) functions return a lazily initialized [`*Regexp`](https://pkg.go.dev/github.com/charlievieth/reonce#Regexp) that
@@ -11,7 +13,7 @@ underlying regexp will not be compiled until used and will panic if there is a
 compilation error.
 
 ```go
-// New returns a new lazily initialized Regexp. The underlying *regexp.Regexp
+// New returns a new lazily initialized *Regexp. The underlying *regexp.Regexp
 // will be compiled on first use. If pattern expr is invalid it will panic.
 func New(expr string) *Regexp {
 	return &Regexp{expr: expr}
@@ -32,5 +34,5 @@ only (since it defeats the purpose of this package).
 
 ```sh
 # use the `reoncetest` build tag when testing your code
-go test -tags reoncetest
+$ go test -tags reoncetest ./...
 ```
