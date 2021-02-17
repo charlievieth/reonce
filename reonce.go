@@ -7,16 +7,16 @@ import (
 )
 
 type Regexp struct {
-	once  sync.Once
 	re    *regexp.Regexp
+	once  sync.Once
+	posix bool // pack this after once to save space
 	expr  string
-	posix bool
 }
 
 // New returns a new lazily initialized Regexp. The underlying *regexp.Regexp
 // will be compiled on first use. If pattern expr is invalid it will panic.
 func New(expr string) *Regexp {
-	return &Regexp{expr: expr}
+	return &Regexp{expr: expr, posix: false}
 }
 
 // New returns a new lazily initialized POSIX Regexp.
