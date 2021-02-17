@@ -20,3 +20,15 @@ func NewPOSIX(expr string) *Regexp {
 	return &Regexp{expr: expr, posix: true}
 }
 ```
+
+### Testing
+
+The `reoncetest` build tag can be used to make `New()` and `NewPOSIX()` call
+MustCompile() on the new Regexp. This makes it easy to check for bad patterns
+(especially those created on program initialization) and is meant for testing
+only (since it defeats the purpose of this package).
+
+```sh
+# use the `reoncetest` build tag when testing your code
+go test -tags reoncetest
+```

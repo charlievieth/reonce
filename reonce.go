@@ -16,12 +16,20 @@ type Regexp struct {
 // New returns a new lazily initialized Regexp. The underlying *regexp.Regexp
 // will be compiled on first use. If pattern expr is invalid it will panic.
 func New(expr string) *Regexp {
-	return &Regexp{expr: expr, posix: false}
+	re := &Regexp{expr: expr, posix: false}
+	if mustCompile {
+		re.mustCompile()
+	}
+	return re
 }
 
 // New returns a new lazily initialized POSIX Regexp.
 func NewPOSIX(expr string) *Regexp {
-	return &Regexp{expr: expr, posix: true}
+	re := &Regexp{expr: expr, posix: true}
+	if mustCompile {
+		re.mustCompile()
+	}
+	return re
 }
 
 // Compile manually compiles the Regexp and returns the error, this is a no-op
