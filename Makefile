@@ -19,6 +19,11 @@ all: test reoncetest lint
 
 .PHONY: cover
 cover: # runs all tests against the package, generating a coverage report and opening it in the default browser
-	go test -race -covermode=atomic -coverprofile=cover.out ./...
-	go tool cover -html cover.out -o cover.html
-	which open && open cover.html
+	@mkdir -p ./build && \
+	go test -race -covermode=atomic -coverprofile=./build/cover.out ./... && \
+	go tool cover -html ./build/cover.out -o ./build/cover.html && \
+	which open && open ./build/cover.html
+
+.PHONY: clean
+clean:
+	rm -rf ./build
