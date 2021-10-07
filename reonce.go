@@ -5,6 +5,7 @@ package reonce
 import (
 	"io"
 	"regexp"
+	"strconv"
 	"sync"
 )
 
@@ -13,6 +14,7 @@ type Regexp struct {
 	once  sync.Once
 	posix bool // pack this after once to save space
 	expr  string
+	err   error
 }
 
 // New returns a new lazily initialized Regexp. The underlying *regexp.Regexp
@@ -20,7 +22,7 @@ type Regexp struct {
 func New(expr string) *Regexp {
 	re := &Regexp{expr: expr, posix: false}
 	if mustCompile {
-		re.mustCompile()
+		re.re()
 	}
 	return re
 }
@@ -29,43 +31,56 @@ func New(expr string) *Regexp {
 func NewPOSIX(expr string) *Regexp {
 	re := &Regexp{expr: expr, posix: true}
 	if mustCompile {
-		re.mustCompile()
+		re.re()
 	}
 	return re
 }
 
+func (re *Regexp) init() {
+	if re.posix {
+		re.rx, re.err = regexp.CompilePOSIX(re.expr)
+	} else {
+		re.rx, re.err = regexp.Compile(re.expr)
+	}
+}
+
 // Compile manually compiles the Regexp and returns the error, this is a no-op
 // if the Regexp was already lazily compiled by a call to any of it's methods.
-func (re *Regexp) Compile() (err error) {
-	re.once.Do(func() {
-		if re.posix {
-			re.rx, err = regexp.CompilePOSIX(re.expr)
-		} else {
-			re.rx, err = regexp.Compile(re.expr)
-		}
-		re.expr = ""
-	})
-	return err
+func (re *Regexp) Compile() error {
+	re.once.Do(re.init)
+	return re.err
 }
 
-func (re *Regexp) mustCompile() {
-	if re.posix {
-		re.rx = regexp.MustCompilePOSIX(re.expr)
-	} else {
-		re.rx = regexp.MustCompile(re.expr)
+func quote(s string) string {
+	if strconv.CanBackquote(s) {
+		return "`" + s + "`"
 	}
-	re.expr = ""
+	return strconv.Quote(s)
 }
 
+func (re *Regexp) panicOnErr() {
+	var prefix string
+	if re.posix {
+		prefix = `regexp: CompilePOSIX(`
+	} else {
+		prefix = `regexp: POSIX(`
+	}
+	panic(prefix + quote(re.expr) + `): ` + re.err.Error())
+}
+
+// re compiles and returns the regexp.Regexp if there is an error re panics.
 func (re *Regexp) re() *regexp.Regexp {
-	re.once.Do(re.mustCompile)
+	re.once.Do(re.init)
+	if re.err != nil {
+		re.panicOnErr()
+	}
 	return re.rx
 }
 
 // MustCompile compiles the Regexp and panics if there is an error, this is a
 // no-op if the Regexp was already lazily compiled by a call to any of  it's
 // methods.
-func (re *Regexp) MustCompile() { re.once.Do(re.mustCompile) }
+func (re *Regexp) MustCompile() { re.re() }
 
 // Regexp returns the underlying *regexp.Regexp.
 func (re *Regexp) Regexp() *regexp.Regexp {

@@ -1,3 +1,4 @@
+//go:build !reoncetest
 // +build !reoncetest
 
 package reonce
@@ -40,10 +41,48 @@ func TestCompile(t *testing.T) {
 func TestCompileError(t *testing.T) {
 	const BadPattern = "*"
 	const ErrMessage = "missing argument to repetition operator"
-	err := New(BadPattern).Compile()
+	re := New(BadPattern)
+	err := re.Compile()
 	if err == nil || !strings.Contains(err.Error(), ErrMessage) {
 		t.Errorf("Compile: expected error to contain: %q got: %v", ErrMessage, err)
 	}
+
+	// make sure we still return the error
+	err2 := re.Compile()
+	if err2 != err {
+		t.Error("Second call to Compile() did not return the same error")
+	}
+}
+
+func TestMustCompileError(t *testing.T) {
+	mustPanic := func(t *testing.T, fn func()) (msg string) {
+		defer func() {
+			e := recover()
+			if e == nil {
+				t.Error("no panic")
+			}
+			msg = e.(string)
+		}()
+		fn()
+		return msg
+	}
+	matchPanic := func(t *testing.T, expr string, posix bool) {
+		t.Helper()
+		// make sure we panic on subsequent calls
+		for i := 0; i < 3; i++ {
+			var got, exp string
+			if posix {
+				exp = mustPanic(t, func() { regexp.MustCompilePOSIX(expr) })
+				got = mustPanic(t, func() { NewPOSIX(expr).MustCompile() })
+			}
+			if got != exp {
+				t.Errorf("%d: %q: expected panic: %s got: %s", i, expr, exp, got)
+			}
+		}
+	}
+
+	matchPanic(t, "*", false)
+	matchPanic(t, "*", true)
 }
 
 func buildMethodArgs(t *testing.T, method reflect.Value) []reflect.Value {
@@ -113,9 +152,6 @@ func TestLazyCompile(t *testing.T) {
 		}
 		if !onceCalled(re) {
 			t.Error("Failed to initialize re.re: once never called")
-		}
-		if re.expr != "" {
-			t.Error("Failed to clear re.expr")
 		}
 		if re.String() != GoodPattern {
 			t.Errorf("Want expr: %q got: %q", GoodPattern, re.rx.String())
@@ -215,4 +251,25 @@ func BenchmarkInitOverhead_Baseline(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		re.Longest() // cheapest method
 	}
+}
+
+func BenchmarkInitOverhead_Parallel(b *testing.B) {
+	re := New("a")
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			re.Longest()
+		}
+	})
+	for i := 0; i < b.N; i++ {
+		re.Longest() // cheapest method
+	}
+}
+
+func BenchmarkInitOverhead_Parallel_Baseline(b *testing.B) {
+	re := regexp.MustCompile("a")
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			re.Longest()
+		}
+	})
 }
