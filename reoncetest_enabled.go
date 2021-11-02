@@ -1,3 +1,4 @@
+//go:build reoncetest
 // +build reoncetest
 
 package reonce
