@@ -20,6 +20,14 @@ func newList() *list { return new(list).Init() }
 // The complexity is O(1).
 func (l *list) Len() int { return l.len }
 
+// Front returns the first element of list l or nil if the list is empty.
+func (l *list) Front() *entry {
+	if l.len == 0 {
+		return nil
+	}
+	return l.root.next
+}
+
 // Back returns the last Element of list l or nil if the list is empty.
 func (l *list) Back() *entry {
 	if l.len != 0 {
