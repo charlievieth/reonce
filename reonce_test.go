@@ -85,6 +85,27 @@ func TestMustCompileError(t *testing.T) {
 	matchPanic(t, "*", true)
 }
 
+func TestString(t *testing.T) {
+	exprs := []string{
+		"aaa",
+		"[",
+		"*",
+		"",
+	}
+	for _, expr := range exprs {
+		got := New(expr).String()
+		if got != expr {
+			t.Errorf("String: want: %q got: %q", expr, got)
+		}
+		if re, _ := regexp.Compile(expr); re != nil {
+			got := New(expr).String()
+			if got != re.String() {
+				t.Errorf("String: want: %q got: %q", re.String(), got)
+			}
+		}
+	}
+}
+
 func buildMethodArgs(t *testing.T, method reflect.Value) []reflect.Value {
 	rr := rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -161,6 +182,9 @@ func TestLazyCompile(t *testing.T) {
 	typ := reflect.TypeOf(&Regexp{})
 	for i := 0; i < typ.NumMethod(); i++ {
 		m := typ.Method(i)
+		if m.Name == "String" {
+			continue
+		}
 		t.Run(m.Name, func(t *testing.T) {
 			testMethod(t, New, m.Name)
 		})
@@ -201,7 +225,7 @@ func TestLazyCompilePanic(t *testing.T) {
 	typ := reflect.TypeOf(&Regexp{})
 	for i := 0; i < typ.NumMethod(); i++ {
 		m := typ.Method(i)
-		if m.Name == "Compile" {
+		if m.Name == "Compile" || m.Name == "String" {
 			continue
 		}
 		t.Run(m.Name, func(t *testing.T) {
