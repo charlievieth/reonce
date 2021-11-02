@@ -85,6 +85,27 @@ func TestMustCompileError(t *testing.T) {
 	matchPanic(t, "*", true)
 }
 
+func TestString(t *testing.T) {
+	exprs := []string{
+		"aaa",
+		"[",
+		"*",
+		"",
+	}
+	for _, expr := range exprs {
+		got := New(expr).String()
+		if got != expr {
+			t.Errorf("String: want: %q got: %q", expr, got)
+		}
+		if re, _ := regexp.Compile(expr); re != nil {
+			got := New(expr).String()
+			if got != re.String() {
+				t.Errorf("String: want: %q got: %q", re.String(), got)
+			}
+		}
+	}
+}
+
 func buildMethodArgs(t *testing.T, method reflect.Value) []reflect.Value {
 	rr := rand.New(rand.NewSource(time.Now().UnixNano()))
 

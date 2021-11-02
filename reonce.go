@@ -382,7 +382,9 @@ func (re *Regexp) Split(s string, n int) []string {
 
 // String returns the source text used to compile the regular expression.
 func (re *Regexp) String() string {
-	return re.re().String()
+	// Don't use re.re() since that will
+	// panic if the expr is invalid.
+	return re.expr
 }
 
 // SubexpNames returns the names of the parenthesized subexpressions
