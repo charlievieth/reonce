@@ -1,4 +1,4 @@
-![Go](https://github.com/charlievieth/reonce/workflows/Go/badge.svg?branch=master) [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/charlievieth/reonce)
+[![github-actions](https://github.com/charlievieth/reonce/actions/workflows/go.yml/badge.svg)](https://github.com/charlievieth/reonce/actions) [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/charlievieth/reonce)
 
 # reonce
 Lazily initialized Go regexes.
