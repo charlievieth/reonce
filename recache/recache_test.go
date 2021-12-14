@@ -281,6 +281,32 @@ func TestSetMaxEntriesPOSIX(t *testing.T) {
 	})
 }
 
+func TestCacheZeroValue(t *testing.T) {
+	var c Cache
+	if posix := c.POSIX(); posix {
+		t.Errorf("POSIX(): got: %t want: %t", posix, false)
+	}
+	if i := c.Len(); i != 0 {
+		t.Errorf("Len(): got: %d want: %d", i, 0)
+	}
+	if i := c.MaxEntries(); i != 0 {
+		t.Errorf("MaxEntries(): got: %d want: %d", i, 0)
+	}
+	if prev := c.SetMaxEntries(8); prev != 0 {
+		t.Errorf("SetMaxEntries(8): got: %d want: %d", prev, 0)
+	}
+	for i := 'a'; i < 'a'+rune(c.MaxEntries()+8); i++ {
+		expr := string(i)
+		re := c.MustCompile(expr)
+		if re.String() != expr {
+			t.Fatalf("MustCompile(`%s`) got: `%s` want: `%s`", expr, re.String(), expr)
+		}
+	}
+	if i := c.Len(); i != c.MaxEntries() {
+		t.Errorf("Len(): got: %d want: %d", i, c.MaxEntries())
+	}
+}
+
 func TestGlobals(t *testing.T) {
 	if std.POSIX() {
 		t.Error("std.POSIX() should be false")

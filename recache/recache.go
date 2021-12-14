@@ -16,7 +16,8 @@ type entry struct {
 }
 
 // Cache is a LRU cache of compiled Regexps. All methods are safe for
-// concurrent access.
+// concurrent access. The zero value for Cache is an empty non-POSIX
+// cache with no max size and if safe for use.
 type Cache struct {
 	mu         sync.Mutex
 	cache      map[string]*entry
@@ -60,7 +61,7 @@ func (c *Cache) SetMaxEntries(n int) (prev int) {
 		panic("recache: non-positive value n: " + strconv.Itoa(n))
 	}
 	c.mu.Lock()
-	if n != 0 {
+	if n != 0 && c.ll != nil {
 		for i := c.ll.Len() - n; i > 0; i-- {
 			c.removeOldest()
 		}
