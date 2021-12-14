@@ -9,12 +9,14 @@ import (
 	"sync"
 )
 
+// Regexp is a lazily initialized regexp.Regexp. A Regexp is safe for concurrent
+// use by multiple goroutines, except for configuration methods, such as Longest.
 type Regexp struct {
 	rx    *regexp.Regexp
 	once  sync.Once
-	posix bool // pack this after once to save space
-	expr  string
-	err   error
+	posix bool   // pack this after once to save space
+	expr  string // as passed to Compile
+	err   error  // Compile error, if any
 }
 
 // New returns a new lazily initialized Regexp. The underlying *regexp.Regexp

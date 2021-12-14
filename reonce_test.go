@@ -266,14 +266,14 @@ func TestLazyCompileParallel(t *testing.T) {
 func BenchmarkInitOverhead(b *testing.B) {
 	re := New("a")
 	for i := 0; i < b.N; i++ {
-		re.Longest() // cheapest method
+		re.LiteralPrefix() // cheapest method
 	}
 }
 
 func BenchmarkInitOverhead_Baseline(b *testing.B) {
 	re := regexp.MustCompile("a")
 	for i := 0; i < b.N; i++ {
-		re.Longest() // cheapest method
+		re.LiteralPrefix()
 	}
 }
 
@@ -281,19 +281,16 @@ func BenchmarkInitOverhead_Parallel(b *testing.B) {
 	re := New("a")
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			re.Longest()
+			re.LiteralPrefix()
 		}
 	})
-	for i := 0; i < b.N; i++ {
-		re.Longest() // cheapest method
-	}
 }
 
 func BenchmarkInitOverhead_Parallel_Baseline(b *testing.B) {
 	re := regexp.MustCompile("a")
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			re.Longest()
+			re.LiteralPrefix()
 		}
 	})
 }
