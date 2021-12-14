@@ -8,7 +8,7 @@ test: # runs all tests against the package with race detection and coverage perc
 
 .PHONY: reoncetest # test the `reoncetest` build tag
 reoncetest:
-	go test -tags reonce ./...
+	go test -race -cover -tags reonce ./...
 
 .PHONY: lint
 lint:
