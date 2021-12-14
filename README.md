@@ -8,7 +8,7 @@ The `reonce` package provides a lazily initialized wrapper around Go's
 regexes to be declared globally without incurring the compilation cost on
 program startup/initialization as the regexes are not compiled until first use.
 The regexes and compilation are thread-safe
-([test](https://github.com/charlievieth/reonce/blob/6f5299ea34e785e202421258a42c336bd6a9a02f/reonce_test.go#L177-L204)).
+([test](https://github.com/charlievieth/reonce/blob/da431544ab5f2be2359ea6a84c5b40f47aba8bd5/reonce_test.go#L237-L264)).
 
 ### Usage
 
@@ -21,27 +21,35 @@ underlying regexp will not be compiled until used and will panic if there is a
 compilation error.
 
 ```go
-// New returns a new lazily initialized *Regexp. The underlying *regexp.Regexp
-// will be compiled on first use. If pattern expr is invalid it will panic.
-func New(expr string) *Regexp {
-	return &Regexp{expr: expr}
-}
+import "github.com/charlievieth/reonce"
 
-// New returns a new lazily initialized POSIX Regexp.
-func NewPOSIX(expr string) *Regexp {
-	return &Regexp{expr: expr, posix: true}
-}
+// Define UUID regexes up-front, neither will be compiled until first use.
+var (
+	uuidRe = reonce.New(
+		`\b[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}\b`,
+	)
+	uuidExactRe = reonce.New(
+		`^[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}$`,
+	)
+)
+
+// ContainsUUID returns if string s contains a UUID.
+func ContainsUUID(s string) bool { return uuidRe.MatchString(s) }
+
+// IsUUID returns if string s is a UUID.
+func IsUUID(s string) bool { return uuidExactRe.MatchString(s) }
 ```
 
 ### Testing
 
 The
-[`reoncetest`](https://github.com/charlievieth/reonce/blob/5faff1a5ae70387f6f4a73320b726063a7834fb8/reoncetest_enabled.go#L1)
-build tag can be used to make `New()` and `NewPOSIX()` call
-[`MustCompile()`](https://golang.org/pkg/regexp/#MustCompile) on the new
-Regexp. This makes it easy to check for bad patterns (especially those created
-on program initialization) and is meant for testing only (since it defeats the
-purpose of this package).
+[`reoncetest`](https://github.com/charlievieth/reonce/blob/master/reoncetest_enabled.go)
+build tag can be used to make
+[`New()`](https://pkg.go.dev/github.com/charlievieth/reonce#New) and
+[`NewPOSIX()`](https://pkg.go.dev/github.com/charlievieth/reonce#NewPOSIX)
+immediately compile the regexp and panic with any error. This makes it easy to
+check for invalid patterns (especially those created on program initialization)
+and is meant for testing only (since it defeats the purpose of this package).
 
 ```sh
 # use the `reoncetest` build tag when testing your code
