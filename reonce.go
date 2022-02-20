@@ -1,5 +1,5 @@
-// Package reonce implements a lazily initialized wrapper around the standard
-// libraries regexp package.
+// Package reonce is a thin wrapper over regexp, allowing the use of global
+// regexp variables without having to compile them at program initialization.
 package reonce
 
 import (
