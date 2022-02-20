@@ -245,7 +245,7 @@ func TestLazyCompileParallel(t *testing.T) {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		wg.Add(1)
 		ready.Add(1)
-		go func(i int) {
+		go func() {
 			defer wg.Done()
 			ready.Done()
 			<-start
@@ -255,7 +255,7 @@ func TestLazyCompileParallel(t *testing.T) {
 					return
 				}
 			}
-		}(i)
+		}()
 	}
 
 	ready.Wait()
