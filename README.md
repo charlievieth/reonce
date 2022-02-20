@@ -6,10 +6,7 @@ Package reonce is a thin wrapper over [`regexp`](https://golang.org/pkg/regexp),
 allowing the use of global regexp variables without having to compile them at
 program initialization.
 
-Lazy compilation is thread-safe and will panic if there is an error.
-This matches the behavior of [`regexp.MustCompile()`](https://pkg.go.dev/regexp#MustCompile)
-and [`regexp.MustCompilePOSIX()`](https://pkg.go.dev/regexp#MustCompilePOSIX).
-The panic messages are the same as those used by the standard library.
+The [`github.com/charlievieth/reonce/recache`](https://github.com/charlievieth/reonce/tree/master/recache) sub-package provides a thread-safe LRU regex cache.
 
 ### Usage
 
@@ -20,6 +17,11 @@ functions return a lazily initialized
 thinly wraps [`*regexp.Regexp`](https://golang.org/pkg/regexp/#Regexp).
 The underlying regexp will not be compiled until used and will panic if
 there is a compilation error.
+
+Lazy compilation is thread-safe and will panic if there is an error.
+This matches the behavior of [`regexp.MustCompile()`](https://pkg.go.dev/regexp#MustCompile)
+and [`regexp.MustCompilePOSIX()`](https://pkg.go.dev/regexp#MustCompilePOSIX).
+The panic messages are the same as those used by the standard library.
 
 The [`Regexp.Compile()`](https://pkg.go.dev/github.com/charlievieth/reonce#Regexp.Compile)
 method can be used to manually force compilation or get the compilation error
