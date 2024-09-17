@@ -1,12 +1,14 @@
-[![github-actions](https://github.com/charlievieth/reonce/actions/workflows/go.yml/badge.svg)](https://github.com/charlievieth/reonce/actions) [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/charlievieth/reonce)
+[![Tests](https://github.com/charlievieth/reonce/actions/workflows/test.yml/badge.svg)](https://github.com/charlievieth/reonce/actions/workflows/test.yml)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/charlievieth/reonce)
 
 # reonce
 
-Package reonce is a thin wrapper over [`regexp`](https://golang.org/pkg/regexp),
-allowing the use of global regexp variables without having to compile them at
-program initialization.
+Package reonce provides lazy [`regexp`](https://golang.org/pkg/regexp)
+initialization. This allows global regexp.Regexp variables to be used
+without incurring an initialization cost at startup (useful for CLIs).
 
-The [`github.com/charlievieth/reonce/recache`](https://github.com/charlievieth/reonce/tree/master/recache) sub-package provides a thread-safe LRU regex cache.
+The [`github.com/charlievieth/reonce/recache`](https://github.com/charlievieth/reonce/tree/master/recache)
+sub-package provides a thread-safe LRU regex cache.
 
 ### Usage
 
