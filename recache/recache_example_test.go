@@ -25,7 +25,7 @@ func ExampleMustCompile() {
 	// The quick brown cat jumps over the lazy dog.
 }
 
-func ExampleNewCache() {
+func ExampleNew() {
 	cache := recache.New(8)
 	for _, expr := range []string{"foo", "bar", "foo"} {
 		fmt.Printf("%q: %t\n", expr, cache.MustCompile(expr).MatchString("foo"))
