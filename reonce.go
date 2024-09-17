@@ -367,17 +367,18 @@ func (re *Regexp) ReplaceAllStringFunc(src string, repl func(string) string) str
 // the substrings between those expression matches.
 //
 // The slice returned by this method consists of all the substrings of s
-// not contained in the slice returned by FindAllString. When called on an expression
-// that contains no metacharacters, it is equivalent to strings.SplitN.
+// not contained in the slice returned by [Regexp.FindAllString]. When called on an expression
+// that contains no metacharacters, it is equivalent to [strings.SplitN].
 //
 // Example:
-//   s := regexp.MustCompile("a*").Split("abaabaccadaaae", 5)
-//   // s: ["", "b", "b", "c", "cadaaae"]
+//
+//	s := regexp.MustCompile("a*").Split("abaabaccadaaae", 5)
+//	// s: ["", "b", "b", "c", "cadaaae"]
 //
 // The count determines the number of substrings to return:
-//   n > 0: at most n substrings; the last substring will be the unsplit remainder.
-//   n == 0: the result is nil (zero substrings)
-//   n < 0: all substrings
+//   - n > 0: at most n substrings; the last substring will be the unsplit remainder;
+//   - n == 0: the result is nil (zero substrings);
+//   - n < 0: all substrings.
 func (re *Regexp) Split(s string, n int) []string {
 	return re.re().Split(s, n)
 }
